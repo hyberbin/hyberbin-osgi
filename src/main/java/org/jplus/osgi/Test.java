@@ -26,38 +26,26 @@ import org.jplus.osgi.runner.MainClassRunner;
 public class Test {
 
     public static void main(String[] args) throws Exception {
+        //模块名称
         final String module="comparedb";
-        List<JarFile> jarFiles = new ArrayList<>();
-        String path = "/黄迎斌/ProjectBuilder/CompareDB";
-        //String path = "/codes/myproject/CompareDB/target/";
-        File file = new File(path);
-        File[] listFiles = file.listFiles();
-        for (File listFile : listFiles) {
-            if(listFile.getName().endsWith(".jar")){
-                jarFiles.add(new JarFile(listFile));
-            }
-        }
+        //获取OSGI容器实例
         final OSGiContainer container = OSGiContainer.getInstance();
+        //启动框架
         container.start();
+        //设置模块安装成功后的处理
         container.setModuleInstalledHandler(new ModuleInstalledHandler() {
             @Override
             public void moduleInstalled(ModuleLoader loader) {
+                //模块安装成功后运行该模块
                 Thread.currentThread().setContextClassLoader((ClassLoader)container.getLoader(module));
                 container.run(module);
             }
         });
-        ModulesBean modulesBean = new ModulesBean(module, "1.0", jarFiles.toArray(new JarFile[]{}),new MainClassRunner("com.hyberbin.main.Main"));
+        //创建模块模型
+        ModulesBean modulesBean = new ModulesBean(module, "1.0", new JarFile[]{new JarFile("/codes/myproject/CompareDB/target/CompareDB.jar")},new MainClassRunner("com.hyberbin.main.Main"));
+        //从本地maven仓库中自动解决依赖
         modulesBean.setModuleLoader(new MavenModuleLoaderImpl("/Users/hyberbin/.m2/repository/"));
+        //安装
         container.install(modulesBean);
-        Thread.sleep(5000);
-        container.unInstall(module);
-        Map<Thread, StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
-        Set<Thread> threads = allStackTraces.keySet();
-        for(Thread thread:threads){
-            if(thread.getName().startsWith("AWT")||thread.getName().startsWith("Java2D")){
-                thread.interrupt();
-            }
-            System.out.println(thread.toString());
-        }
     }
 }
