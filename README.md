@@ -211,7 +211,5 @@ spring-dynamic文件夹下是动态安装一个SpringMVC模块的实现
 * 动态装载Service类,并注册Aop服务和BeanFactory缓存服务,开启Hibernate事务.
 * 动态装载Hibernate类,并动态生成和加载新的SessionFactory,和BeanFactory缓存服务.
 * 自动将jar包中的jsp文件解压到web容器下.
-
-## 问题申明
-* 这种osgi平台下的模块中如果有单独的线程或者不能正常中断的程序将导致模块只能加载不能卸载!
-* 程序中不能有System.exit()方法的调用.
+* 可以自动结束该模块创建的所有线程.
+* 可以自动结束模块中带有Frame窗体的程序.
