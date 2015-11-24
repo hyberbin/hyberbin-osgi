@@ -5,13 +5,9 @@
  */
 package org.jplus.osgi.core;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
+import java.awt.*;
+import java.util.*;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,6 +20,9 @@ import org.jplus.osgi.loader.ModuleLoader;
 import org.jplus.osgi.installer.handler.ModuleInstalledHandler;
 import org.jplus.osgi.loader.handler.ModuleLoadedHandler;
 import org.jplus.osgi.runner.ModuleRunner;
+import org.jplus.osgi.util.ThreadKiller;
+
+import javax.swing.*;
 
 /**
  * 模块容器.
@@ -34,8 +33,9 @@ public class OSGiContainer {
     //单例模式下唯一实例
     private static final OSGiContainer INSTANCE = new OSGiContainer();
     private final Map<String, ModuleLoader> modulesMap = new HashMap<String, ModuleLoader>();
+    private static final  String TIMER_NAME="OSGiContainerTimer";
     //定时器
-    private final Timer timer = new Timer("OSGiContainerTimer");
+    private final Timer timer = new Timer(TIMER_NAME);
     //安装队列
     private final Queue<ModulesBean> installQueue = new LinkedList<ModulesBean>();
     //卸载队列
@@ -53,7 +53,7 @@ public class OSGiContainer {
         moduleInstaller = new ModuleInstallerImpl(new ModuleLoadedHandler() {
             @Override
             public void moduleLoaded(ModuleLoader loader) {
-                Logger.getLogger(ModuleInstallerImpl.class.getName()).log(Level.INFO, "模块:" + loader.getModulesBean() + "加载完毕");
+                Logger.getLogger(OSGiContainer.class.getName()).log(Level.INFO, "模块:" + loader.getModulesBean() + "加载完毕");
             }
         });
     }
@@ -94,6 +94,20 @@ public class OSGiContainer {
                         }
                         modulesBean.setStatus(ModuleStatus.removed);
                         modulesBean.setUninstallTime(new Date());
+                        Frame[] frames = JFrame.getFrames();
+                        for (Frame frame:frames){
+                            if(frame.getClass().getClassLoader() ==remove){
+                                Logger.getLogger(OSGiContainer.class.getName()).log(Level.INFO, "卸载模块:" + modulesBean.getName() + ",退出窗体:"+frame);
+                                frame.dispose();
+                            }
+                        }
+                        Set<Thread> threads = Thread.getAllStackTraces().keySet();
+                        for(Thread thread:threads){
+                            if(thread.getContextClassLoader()!=null&&!TIMER_NAME.equals(thread.getName())&&thread.getContextClassLoader()==remove){
+                                Logger.getLogger(OSGiContainer.class.getName()).log(Level.INFO, "卸载模块:" + modulesBean.getName() + ",结束线程:"+thread);
+                                new ThreadKiller(thread).stop();
+                            }
+                        }
                     }
                 }
             }

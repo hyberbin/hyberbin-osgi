@@ -5,10 +5,10 @@
  */
 package org.jplus.osgi;
 
+import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarFile;
 
@@ -19,33 +19,39 @@ import org.jplus.osgi.loader.ModuleLoader;
 import org.jplus.osgi.installer.handler.ModuleInstalledHandler;
 import org.jplus.osgi.runner.MainClassRunner;
 
+import javax.swing.*;
+
 /**
- *
  * @author hyberbin
  */
 public class Test {
 
     public static void main(String[] args) throws Exception {
-        //模块名称
-        final String module="comparedb";
-        //获取OSGI容器实例
+        final String module = "comparedb";
+        List<JarFile> jarFiles = new ArrayList<>();
+        String path = "/黄迎斌/ProjectBuilder/CompareDB";
+        //String path = "/codes/myproject/CompareDB/target/";
+        File file = new File(path);
+        File[] listFiles = file.listFiles();
+        for (File listFile : listFiles) {
+            if (listFile.getName().endsWith(".jar")) {
+                jarFiles.add(new JarFile(listFile));
+            }
+        }
         final OSGiContainer container = OSGiContainer.getInstance();
-        //启动框架
         container.start();
-        //设置模块安装成功后的处理
         container.setModuleInstalledHandler(new ModuleInstalledHandler() {
             @Override
             public void moduleInstalled(ModuleLoader loader) {
-                //模块安装成功后运行该模块
-                Thread.currentThread().setContextClassLoader((ClassLoader)container.getLoader(module));
+                Thread.currentThread().setContextClassLoader((ClassLoader) container.getLoader(module));
                 container.run(module);
             }
         });
-        //创建模块模型
-        ModulesBean modulesBean = new ModulesBean(module, "1.0", new JarFile[]{new JarFile("/codes/myproject/CompareDB/target/CompareDB.jar")},new MainClassRunner("com.hyberbin.main.Main"));
-        //从本地maven仓库中自动解决依赖
+        ModulesBean modulesBean = new ModulesBean(module, "1.0", jarFiles.toArray(new JarFile[]{}), new MainClassRunner("com.hyberbin.main.Main"));
         modulesBean.setModuleLoader(new MavenModuleLoaderImpl("/Users/hyberbin/.m2/repository/"));
-        //安装
         container.install(modulesBean);
+        Thread.sleep(5000);
+        container.unInstall(module);
+
     }
 }
